@@ -69,5 +69,5 @@ app.post('/encrypt', upload.array('yamlFiles'), (req, res) => processFiles(req, 
 app.post('/decrypt', upload.array('yamlFiles'), (req, res) => processFiles(req, res, 'decrypt'));
 
 app.listen(3000, () => {
-    console.log('Server running at http://localhost:3000');
+    console.log('Server running at https://datacrypt-bk4h.onrender.com');
 });
