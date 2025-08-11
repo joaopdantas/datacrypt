@@ -9,6 +9,5 @@ logs/
 *.swo
 .DS_Store
 Thumbs.db
-secure-properties-tool.jar
 package-lock.json
 
