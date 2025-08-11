@@ -1,0 +1,14 @@
+node_modules/
+uploads/
+*.log
+logs/
+*.tmp
+*.temp
+*.bak
+*.swp
+*.swo
+.DS_Store
+Thumbs.db
+secure-properties-tool.jar
+package-lock.json
+public/style.css

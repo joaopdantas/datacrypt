@@ -1,0 +1,238 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Properties Tool</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <div class="background-animation"></div>
+    
+    <div class="container">
+        <div class="card">
+            <div class="header">
+                <div class="logo">
+                    <i class="fas fa-shield-alt"></i>
+                </div>
+                <h1>Secure Properties Tool</h1>
+                <p class="subtitle">Encrypt & Decrypt YAML files with enterprise-grade security</p>
+            </div>
+
+            <form id="secureForm">
+                <div class="form-group">
+                    <label><i class="fas fa-exchange-alt"></i> Action</label>
+                    <select name="action" required id="actionSelect">
+                        <option value="encrypt">Encrypt</option>
+                        <option value="decrypt">Decrypt</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-upload"></i> YAML Files</label>
+                    <div class="file-input-wrapper" id="fileWrapper">
+                        <input type="file" name="yamlFiles" accept=".yaml,.yml" multiple required class="file-input" id="fileInput">
+                        <div class="file-icon">
+                            <i class="fas fa-cloud-upload-alt"></i>
+                        </div>
+                        <div class="file-text">Drag & drop your YAML files here</div>
+                        <div class="file-subtext">or click to browse</div>
+                    </div>
+                    <div class="selected-files" id="selectedFiles"></div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-key"></i> Encryption Key</label>
+                    <div class="input-wrapper">
+                        <input type="text" name="key" placeholder="Enter your secret key" required>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-cog"></i> Algorithm</label>
+                    <select name="algorithm" required>
+                        <option value="AES">AES (Advanced Encryption Standard)</option>
+                        <option value="Blowfish">Blowfish</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-sliders-h"></i> Mode</label>
+                    <select name="mode" required>
+                        <option value="CBC">CBC (Cipher Block Chaining)</option>
+                        <option value="CFB">CFB (Cipher Feedback)</option>
+                        <option value="ECB">ECB (Electronic Codebook)</option>
+                        <option value="OFB">OFB (Output Feedback)</option>
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label><i class="fas fa-random"></i> Security Options</label>
+                    <div class="checkbox-wrapper">
+                        <input type="checkbox" name="useRandomIV" value="true" class="checkbox" id="randomIV">
+                        <label for="randomIV" class="checkbox-label">Use Random Initialization Vectors (Recommended)</label>
+                    </div>
+                </div>
+
+                <div class="button-group">
+                    <button type="submit" class="btn btn-process">
+                        <i class="fas fa-play"></i> Process Files
+                    </button>
+                </div>
+            </form>
+
+            <div id="result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        const fileInput = document.getElementById('fileInput');
+        const fileWrapper = document.getElementById('fileWrapper');
+        const selectedFiles = document.getElementById('selectedFiles');
+        const form = document.getElementById('secureForm');
+        const result = document.getElementById('result');
+
+        // File drag and drop functionality
+        fileWrapper.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileWrapper.classList.add('dragover');
+        });
+
+        fileWrapper.addEventListener('dragleave', (e) => {
+            e.preventDefault();
+            fileWrapper.classList.remove('dragover');
+        });
+
+        fileWrapper.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileWrapper.classList.remove('dragover');
+            fileInput.files = e.dataTransfer.files;
+            displaySelectedFiles();
+        });
+
+        fileInput.addEventListener('change', displaySelectedFiles);
+
+        function displaySelectedFiles() {
+            const files = fileInput.files;
+            if (files.length === 0) {
+                selectedFiles.style.display = 'none';
+                return;
+            }
+
+            selectedFiles.style.display = 'block';
+            selectedFiles.innerHTML = '';
+
+            Array.from(files).forEach(file => {
+                const fileItem = document.createElement('div');
+                fileItem.className = 'file-item';
+                
+                const size = file.size < 1024 ? file.size + ' B' : 
+                           file.size < 1048576 ? (file.size / 1024).toFixed(1) + ' KB' : 
+                           (file.size / 1048576).toFixed(1) + ' MB';
+
+                fileItem.innerHTML = `
+                    <i class="fas fa-file-code"></i>
+                    <span class="file-name">${file.name}</span>
+                    <span class="file-size">${size}</span>
+                `;
+                
+                selectedFiles.appendChild(fileItem);
+            });
+        }
+
+        // Clear files when changing action
+        document.getElementById('actionSelect').addEventListener('change', function() {
+            fileInput.value = '';
+            selectedFiles.innerHTML = '';
+            selectedFiles.style.display = 'none';
+        });
+
+        // Form submission - keeping your original form handling logic
+        form.addEventListener('submit', function(e) {
+            e.preventDefault();
+            
+            const formData = new FormData(form);
+            const action = formData.get('action');
+            
+            // Disable buttons and show loading
+            const buttons = form.querySelectorAll('.btn');
+            buttons.forEach(btn => btn.disabled = true);
+            
+            showResult('loading', `${action.charAt(0).toUpperCase() + action.slice(1)}ing files...`);
+
+            fetch(`/${action}`, {
+                method: 'POST',
+                body: formData
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error(`Server responded with ${response.status}`);
+                }
+                return response.blob();
+            })
+            .then(blob => {
+                // Create download
+                const url = window.URL.createObjectURL(blob);
+                const a = document.createElement('a');
+                a.href = url;
+                a.download = `${action}ed-files.zip`;
+                document.body.appendChild(a);
+                a.click();
+                a.remove();
+                window.URL.revokeObjectURL(url);
+
+                showResult('success', `✅ ${action.charAt(0).toUpperCase() + action.slice(1)}ion completed successfully! Your ZIP file is downloading.`);
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                showResult('error', `❌ Failed to ${action} files. Please check your inputs and try again.`);
+            })
+            .finally(() => {
+                // Re-enable buttons
+                buttons.forEach(btn => btn.disabled = false);
+            });
+        });
+
+        function showResult(type, message) {
+            result.className = `result ${type}`;
+            
+            if (type === 'loading') {
+                result.innerHTML = `
+                    <div class="spinner"></div>
+                    <span>${message}</span>
+                `;
+            } else {
+                result.innerHTML = message;
+            }
+            
+            result.style.display = 'block';
+            
+            if (type !== 'loading') {
+                setTimeout(() => {
+                    result.style.display = 'none';
+                }, 5000);
+            }
+        }
+
+        // Add some interactive animations
+        document.querySelectorAll('input, select').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'scale(1.02)';
+            });
+            
+            input.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'scale(1)';
+            });
+        });
+
+        // Make file input wrapper clickable to open file dialog
+        fileWrapper.addEventListener('click', function(e) {
+            // Only trigger if the user clicks on the wrapper, not the input itself
+            if (e.target === fileWrapper || e.target.classList.contains('file-icon') || e.target.classList.contains('file-text') || e.target.classList.contains('file-subtext')) {
+                fileInput.click();
+            }
+        });
+    </script>
+</body>
+</html>
