@@ -226,12 +226,9 @@
             });
         });
 
-        // Make file input wrapper clickable to open file dialog
-        fileWrapper.addEventListener('click', function(e) {
-            // Only trigger if the user clicks on the wrapper, not the input itself
-            if (e.target === fileWrapper || e.target.classList.contains('file-icon') || e.target.classList.contains('file-text') || e.target.classList.contains('file-subtext')) {
-                fileInput.click();
-            }
+        // Make file input wrapper always open file dialog on click
+        fileWrapper.addEventListener('click', function() {
+            fileInput.click();
         });
     </script>
 </body>
